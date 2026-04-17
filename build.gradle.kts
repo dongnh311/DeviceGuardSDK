@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.vanniktech.maven.publish) apply false
+    alias(libs.plugins.kover)
 }
 
 allprojects {
@@ -58,5 +59,15 @@ subprojects {
                 }
             }
         }
+        apply(plugin = rootProject.libs.plugins.kover.get().pluginId)
     }
+}
+
+dependencies {
+    kover(project(":deviceguard-core"))
+    kover(project(":deviceguard-fingerprint"))
+    kover(project(":deviceguard-rootcheck"))
+    kover(project(":deviceguard-emulator"))
+    kover(project(":deviceguard-integrity"))
+    kover(project(":deviceguard-network"))
 }

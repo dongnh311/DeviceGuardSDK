@@ -222,10 +222,35 @@ matching is case-insensitive (`TAP0` on Windows and `utun3` on macOS both count)
 ## Building
 
 ```bash
-./gradlew build        # all targets
-./gradlew allTests     # run all platform tests
-./gradlew dokkaHtml    # generate API docs
+./gradlew build             # all targets
+./gradlew allTests          # run all platform tests
+./gradlew dokkaHtml         # generate API docs
+./gradlew koverHtmlReport   # aggregated code coverage (HTML)
+./gradlew koverXmlReport    # aggregated code coverage (XML, for CI ingest)
 ```
+
+## Testing & coverage
+
+Tests run at two layers:
+
+- **Common logic** — orchestrator, scoring, serialization, threat/result validation, and every
+  detector's threshold + threat-emission paths live in each module's `commonTest` source set
+  and execute on JVM, JS, Android unit, and iOS simulator runners.
+- **Platform adapters** — `jvmTest` source sets exercise the desktop probes directly:
+  fingerprint signals (`os.*`, `jvm.*`, `net.mac_hash` shape), proxy detection via
+  `System.getProperty` + `ProxySelector`, and the `NotApplicable` bypasses for rootcheck
+  and integrity on desktop. Android-instrumented, iOS-device, and JS browser tests remain
+  follow-up work.
+
+Coverage reports are produced by the [Kover](https://github.com/Kotlin/kotlinx-kover) plugin
+and aggregated at the root. After `./gradlew koverHtmlReport`, open
+`build/reports/kover/html/index.html`.
+
+A JVM p95 latency benchmark
+(`deviceguard-core/src/jvmTest/.../AnalyzePerfBenchmarkJvmTest.kt`) guards the orchestrator's
+overhead against the SDK's 200ms p95 budget on a mid-tier device. It runs synthetic stub
+detectors on `Dispatchers.Default`, so regressions that drop detector parallelism or add
+per-run blocking work fail the suite.
 
 ## Contributing
 
