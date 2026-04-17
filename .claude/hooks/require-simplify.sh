@@ -21,7 +21,12 @@ payload="$(cat)"
 cmd="$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')"
 
 # Only gate `gh pr create`. Everything else passes through.
-if ! printf '%s' "$cmd" | grep -Eq '(^|[^[:alnum:]_/-])gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)'; then
+# Match only against the FIRST LINE of the command. Commit-message heredocs,
+# quoted JSON payloads, and other multi-line bodies put `gh pr create` on
+# later lines where it's prose, not an invocation — ignore those. The first
+# line is where the actual invocation lives (possibly chained with `&&`/`;`).
+first_line="$(printf '%s' "$cmd" | sed -n '1p')"
+if ! printf '%s' "$first_line" | grep -Eq '(^|[[:space:];&|])gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)'; then
   exit 0
 fi
 

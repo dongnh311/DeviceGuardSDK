@@ -44,12 +44,24 @@ kotlin {
             dependencies {
                 api(project(":deviceguard-core"))
                 implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.kotlinx.io.core)
+                implementation(libs.kotlincrypto.hash.sha2)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.junit)
+            }
+        }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.junit)
+                implementation(libs.mockk)
             }
         }
     }

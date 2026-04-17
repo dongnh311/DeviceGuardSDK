@@ -46,24 +46,43 @@ println("Device ID: ${report.fingerprint.id}")
 
 ## Modules
 
-| Module | Purpose |
-|--------|---------|
-| `deviceguard-core` | Public API, models, orchestrator |
-| `deviceguard-fingerprint` | Stable cross-platform device ID |
-| `deviceguard-rootcheck` | Root / Jailbreak detection |
-| `deviceguard-emulator` | Emulator / Debugger detection |
-| `deviceguard-integrity` | App tampering & hook detection |
-| `deviceguard-network` | VPN / Proxy / Tor inspection |
-| `deviceguard-bom` | Bill of Materials for version alignment |
+| Module | Status | Purpose |
+|--------|--------|---------|
+| `deviceguard-core` | ✅ available | Public API, models, orchestrator |
+| `deviceguard-fingerprint` | ✅ available | Stable cross-platform device ID |
+| `deviceguard-rootcheck` | 🚧 planned | Root / Jailbreak detection |
+| `deviceguard-emulator` | 🚧 planned | Emulator / Debugger detection |
+| `deviceguard-integrity` | 🚧 planned | App tampering & hook detection |
+| `deviceguard-network` | 🚧 planned | VPN / Proxy / Tor inspection |
+| `deviceguard-bom` | ✅ available | Bill of Materials for version alignment |
 
 ## Platforms
 
-| Platform | Status |
-|----------|--------|
-| Android (API 21+) | planned |
-| iOS (13+) | planned |
-| JVM / Desktop | planned |
-| JS / Web | planned (best-effort) |
+| Platform | Core | Fingerprint |
+|----------|------|-------------|
+| Android (API 21+) | ✅ | ✅ |
+| iOS (13+) | ✅ | ✅ |
+| JVM / Desktop | ✅ | ✅ |
+| JS / Web | ✅ | ✅ (best-effort, browser only) |
+
+## Fingerprinting
+
+The `deviceguard-fingerprint` module collects non-PII platform signals and hashes them
+(SHA-256 with length-prefixed encoding, no collision risk) into a stable device id.
+
+Signals collected per platform:
+
+- **Android:** `Build.MANUFACTURER/BRAND/MODEL/DEVICE/PRODUCT/HARDWARE`, `SDK_INT`,
+  `SUPPORTED_ABIS`, `Settings.Secure.ANDROID_ID`, screen density and resolution, locale, timezone.
+- **iOS:** `UIDevice.systemName/systemVersion/model`, `identifierForVendor`, screen scale and
+  bounds, locale, timezone.
+- **JVM:** `os.name/version/arch`, `java.vendor/version`, locale, timezone, and a SHA-256
+  digest of the first non-loopback MAC address (the raw bytes never leave the detector).
+- **JS:** `navigator.userAgent/platform/language/hardwareConcurrency`, screen resolution and
+  color depth, timezone and UTC offset.
+
+No IMEI, advertising id, account name, email, or other directly identifying value is read —
+the fingerprint is stable across app launches but invalidates on a factory reset or MAC change.
 
 ## Building
 

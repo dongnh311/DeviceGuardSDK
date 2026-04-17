@@ -89,6 +89,22 @@ for the sentinel commit and blocks `gh pr create` if none is found. The hook
 leaves `gh pr view`, `gh pr list`, `gh pr comment`, `gh pr merge`, etc.
 untouched — only creation is gated.
 
+**README refresh rule** — a second hook at `.claude/hooks/require-readme-touch.sh`
+also gates `gh pr create`. It blocks the call when the branch diff touches
+public-facing code (`.kt`, `.kts`, `gradle/libs.versions.toml`,
+`settings.gradle.kts`, or a module's `build.gradle.kts`) but `README.md` is
+unchanged. Resolve by either:
+
+- Editing `README.md` — update the module table, installation snippet, platform
+  status, quick-start API, or feature list to match what the PR ships — and
+  committing the edit to this branch, **or**
+- Adding a commit whose message contains `no-readme`, `skip-readme`,
+  `readme: n/a`, `readme: not applicable`, or `readme: unchanged` if the change
+  genuinely affects nothing a consumer would read.
+
+The hook is silent for pure-tooling diffs (CI YAML, `.claude/`, hook scripts,
+docs-only PRs) since those don't match the public-facing file patterns.
+
 **Review rules for `/simplify`:**
 
 - **Reuse agent** — flag hand-rolled logic that stdlib / kotlinx / project
