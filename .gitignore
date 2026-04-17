@@ -1,0 +1,61 @@
+# Gradle
+.gradle/
+build/
+!**/src/**/build/
+!**/src/**/main/build/
+!**/src/**/test/build/
+out/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+.gradletasknamecache
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+local.properties
+captures/
+.navigation/
+.externalNativeBuild/
+.cxx/
+
+# Kotlin
+.kotlin/
+
+# macOS
+.DS_Store
+
+# Xcode / iOS
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.hmap
+Pods/
+Carthage/Build/
+.swiftpm/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Node / JS
+node_modules/
+.yarn/
+.pnp.*
+kotlin-js-store/
+
+# Environment / secrets
+*.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+signing.properties
+gradle.local.properties
+
+# Logs
+*.log
+hs_err_pid*
+replay_pid*
+
+# Claude Code local settings
+.claude/settings.local.json

@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ktlint + detekt)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run ktlint
+        run: ./gradlew ktlintCheck --no-daemon
+      - name: Run detekt
+        run: ./gradlew detekt --no-daemon
+
+  build-linux:
+    name: Build (Linux — JVM + JS + Android)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build JVM / JS / Android targets
+        run: |
+          ./gradlew \
+            compileKotlinJvm \
+            compileKotlinJs \
+            assembleRelease \
+            jvmTest \
+            jsNodeTest \
+            --no-daemon
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-linux
+          path: '**/build/reports/'
+
+  build-macos:
+    name: Build (macOS — iOS + full matrix)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Full build (all targets including iOS)
+        run: ./gradlew build --no-daemon
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-macos
+          path: '**/build/reports/'
+
+  docs:
+    name: Dokka API docs
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Generate Dokka HTML
+        run: ./gradlew dokkaHtmlMultiModule --no-daemon
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-docs
+          path: build/dokka/htmlMultiModule
