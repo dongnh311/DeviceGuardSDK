@@ -1,10 +1,12 @@
 package io.github.dongnh311.deviceguard.core
 
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.datetime.Clock
+
+private const val TAG = "DeviceGuard"
 
 /**
  * Orchestrator for every detector attached via [Builder].
@@ -12,7 +14,6 @@ import kotlinx.datetime.Clock
  * Call [analyze] to run each detector concurrently, merge the outputs, apply the configured
  * [RiskScoring] strategy, and return a single [SecurityReport].
  *
- * Construct instances through [Builder]:
  * ```kotlin
  * val guard = DeviceGuard.Builder(context)
  *     .addDetector(myDetector)
@@ -29,9 +30,6 @@ public class DeviceGuard internal constructor(
     private val scoring: RiskScoring,
     private val clock: () -> Long,
 ) {
-    /** Number of detectors attached to this [DeviceGuard]. Useful for diagnostics. */
-    public val detectorCount: Int get() = detectors.size
-
     /**
      * Run every attached detector and assemble a [SecurityReport].
      *
@@ -39,84 +37,67 @@ public class DeviceGuard internal constructor(
      * detector's failure doesn't cancel the others. [DetectionResult.NotApplicable] results
      * are logged and otherwise ignored — they don't count as errors.
      */
-    public suspend fun analyze(): SecurityReport = coroutineScope { analyzeIn(this) }
-
-    private suspend fun analyzeIn(scope: CoroutineScope): SecurityReport {
-        logger.log(
-            level = DeviceGuardLogger.LogLevel.DEBUG,
-            tag = TAG,
-            message = "Starting analysis with ${detectors.size} detector(s)",
-        )
-
-        val deferred =
-            detectors.map { detector ->
-                scope.async {
-                    runDetector(detector)
-                }
+    public suspend fun analyze(): SecurityReport =
+        coroutineScope {
+            logger.logLazy(DeviceGuardLogger.LogLevel.DEBUG) {
+                "Starting analysis with ${detectors.size} detector(s)"
             }
-        val results = deferred.awaitAll()
 
-        val threats = mutableListOf<DetectedThreat>()
-        val signals = linkedMapOf<String, String>()
-        val errors = mutableListOf<DetectorError>()
-        var fingerprint: DeviceFingerprint? = null
+            val results = detectors.map { async { runDetector(it) } }.awaitAll()
 
-        for (result in results) {
-            when (result) {
-                is DetectionResult.Success<*> -> {
-                    threats += result.threats
-                    signals.putAll(result.signals)
-                    val data = result.data
-                    if (fingerprint == null && data is DeviceFingerprint) {
-                        fingerprint = data
+            val threats = mutableListOf<DetectedThreat>()
+            val signals = linkedMapOf<String, String>()
+            val errors = mutableListOf<DetectorError>()
+            var fingerprint: DeviceFingerprint? = null
+
+            for (result in results) {
+                when (result) {
+                    is DetectionResult.Success<*> -> {
+                        threats += result.threats
+                        signals.putAll(result.signals)
+                        val data = result.data
+                        if (fingerprint == null && data is DeviceFingerprint) {
+                            fingerprint = data
+                        }
+                    }
+                    is DetectionResult.NotApplicable ->
+                        logger.logLazy(DeviceGuardLogger.LogLevel.VERBOSE) {
+                            "Detector '${result.detectorId}' not applicable: ${result.reason ?: "platform mismatch"}"
+                        }
+                    is DetectionResult.Failed -> {
+                        errors +=
+                            DetectorError(
+                                detectorId = result.detectorId,
+                                message = result.message,
+                                errorType = result.errorType,
+                            )
+                        logger.logLazy(DeviceGuardLogger.LogLevel.WARN) {
+                            "Detector '${result.detectorId}' failed: ${result.message}"
+                        }
                     }
                 }
-                is DetectionResult.NotApplicable ->
-                    logger.log(
-                        level = DeviceGuardLogger.LogLevel.VERBOSE,
-                        tag = TAG,
-                        message = "Detector '${result.detectorId}' not applicable: ${result.reason ?: "platform mismatch"}",
-                    )
-                is DetectionResult.Failed -> {
-                    errors +=
-                        DetectorError(
-                            detectorId = result.detectorId,
-                            message = result.message,
-                            errorType = result.errorType,
-                        )
-                    logger.log(
-                        level = DeviceGuardLogger.LogLevel.WARN,
-                        tag = TAG,
-                        message = "Detector '${result.detectorId}' failed: ${result.message}",
-                    )
-                }
             }
-        }
 
-        val score = scoring.score(threats)
-        return SecurityReport(
-            riskScore = score,
-            riskLevel = RiskLevel.fromScore(score),
-            threats = threats,
-            fingerprint = fingerprint,
-            signals = signals,
-            errors = errors,
-            analyzedAtEpochMillis = clock(),
-        )
-    }
+            val score = scoring.score(threats)
+            SecurityReport(
+                riskScore = score,
+                threats = threats,
+                fingerprint = fingerprint,
+                signals = signals,
+                errors = errors,
+                analyzedAtEpochMillis = clock(),
+            )
+        }
 
     private suspend fun runDetector(detector: Detector<*>): DetectionResult<*> =
         try {
             detector.detect(context)
-        } catch (cancellation: kotlinx.coroutines.CancellationException) {
+        } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (error: Throwable) {
-            logger.log(
-                level = DeviceGuardLogger.LogLevel.ERROR,
-                tag = TAG,
-                message = "Detector '${detector.id}' threw",
-                error = error,
-            )
+            logger.logLazy(DeviceGuardLogger.LogLevel.ERROR, error = error) {
+                "Detector '${detector.id}' threw"
+            }
             DetectionResult.Failed(
                 detectorId = detector.id,
                 message = error.message ?: error::class.simpleName.orEmpty(),
@@ -157,9 +138,7 @@ public class DeviceGuard internal constructor(
                 this.scoring = scoring
             }
 
-        /** Override the clock used for [SecurityReport.analyzedAtEpochMillis]. Test-only. */
-        @ExperimentalDeviceGuardApi
-        public fun clock(clock: () -> Long): Builder =
+        internal fun clock(clock: () -> Long): Builder =
             apply {
                 this.clock = clock
             }
@@ -174,8 +153,12 @@ public class DeviceGuard internal constructor(
                 clock = clock,
             )
     }
+}
 
-    internal companion object {
-        internal const val TAG: String = "DeviceGuard"
-    }
+private inline fun DeviceGuardLogger.logLazy(
+    level: DeviceGuardLogger.LogLevel,
+    error: Throwable? = null,
+    message: () -> String,
+) {
+    if (isEnabled(level)) log(level, TAG, message(), error)
 }

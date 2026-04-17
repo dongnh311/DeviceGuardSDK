@@ -10,7 +10,6 @@ class SecurityReportSerializationTest {
         val report =
             SecurityReport(
                 riskScore = 65,
-                riskLevel = RiskLevel.HIGH,
                 threats =
                     listOf(
                         DetectedThreat.of(
@@ -36,10 +35,24 @@ class SecurityReportSerializationTest {
                 analyzedAtEpochMillis = 1_700_000_000_000L,
             )
 
-        val json = report.toJson()
-        val parsed = SecurityReport.fromJson(json)
+        val parsed = SecurityReport.fromJson(report.toJson())
 
         assertEquals(report, parsed)
+        assertEquals(RiskLevel.HIGH, parsed.riskLevel)
+    }
+
+    @Test
+    fun riskLevelIsDerivedNotStored() {
+        val report =
+            SecurityReport(
+                riskScore = 95,
+                threats = emptyList(),
+                analyzedAtEpochMillis = 0L,
+            )
+        val json = report.toJson()
+
+        assertEquals(RiskLevel.CRITICAL, report.riskLevel)
+        assertTrue("riskLevel" !in json, "riskLevel must not appear in serialized JSON: $json")
     }
 
     @Test
@@ -47,7 +60,6 @@ class SecurityReportSerializationTest {
         val report =
             SecurityReport(
                 riskScore = 0,
-                riskLevel = RiskLevel.SAFE,
                 threats = emptyList(),
                 analyzedAtEpochMillis = 0L,
             )

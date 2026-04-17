@@ -6,8 +6,7 @@ import kotlinx.serialization.Serializable
  * Bucketed interpretation of [SecurityReport.riskScore].
  *
  * Buckets are non-overlapping and cover `0..100` exhaustively so that every score maps to
- * exactly one level. Consumers can use [fromScore] to derive a level from a raw integer and
- * [matches] to test membership.
+ * exactly one level.
  */
 @Serializable
 public enum class RiskLevel {
@@ -28,25 +27,17 @@ public enum class RiskLevel {
     ;
 
     /** Returns `true` when [score] falls inside this level's bucket. */
-    public fun matches(score: Int): Boolean = score in scoreRange(this)
+    public fun matches(score: Int): Boolean = fromScore(score) == this
 
     public companion object {
         /** Map a raw score (clamped to `0..100`) to the corresponding level. */
-        public fun fromScore(score: Int): RiskLevel {
-            val clamped = score.coerceIn(MIN_SCORE, MAX_SCORE)
-            return entries.first { clamped in scoreRange(it) }
-        }
-
-        private const val MIN_SCORE = 0
-        private const val MAX_SCORE = 100
-
-        private fun scoreRange(level: RiskLevel): IntRange =
-            when (level) {
-                SAFE -> 0..19
-                LOW -> 20..39
-                MEDIUM -> 40..59
-                HIGH -> 60..79
-                CRITICAL -> 80..100
+        public fun fromScore(score: Int): RiskLevel =
+            when (score.coerceIn(0, 100)) {
+                in 0..19 -> SAFE
+                in 20..39 -> LOW
+                in 40..59 -> MEDIUM
+                in 60..79 -> HIGH
+                else -> CRITICAL
             }
     }
 }

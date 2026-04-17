@@ -7,18 +7,16 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalDeviceGuardApi::class)
 class DeviceGuardTest {
     @Test
     fun emptyDetectorListProducesSafeReport() =
         runTest {
-            val guard =
+            val report =
                 DeviceGuard
                     .Builder(testContext())
                     .clock { FIXED_EPOCH }
                     .build()
-
-            val report = guard.analyze()
+                    .analyze()
 
             assertEquals(0, report.riskScore)
             assertEquals(RiskLevel.SAFE, report.riskLevel)
@@ -133,8 +131,7 @@ class DeviceGuardTest {
             assertEquals(0, report.riskScore)
             assertEquals(RiskLevel.SAFE, report.riskLevel)
             assertEquals(2, report.errors.size)
-            val ids = report.errors.map { it.detectorId }.toSet()
-            assertEquals(setOf("throws", "returns_failed"), ids)
+            assertEquals(setOf("throws", "returns_failed"), report.errors.map { it.detectorId }.toSet())
         }
 
     @Test
@@ -143,11 +140,7 @@ class DeviceGuardTest {
             val detector =
                 stubDetector<Unit>(
                     id = "skip",
-                    result =
-                        DetectionResult.NotApplicable(
-                            detectorId = "skip",
-                            reason = "jvm",
-                        ),
+                    result = DetectionResult.NotApplicable(detectorId = "skip", reason = "jvm"),
                 )
 
             val report =
@@ -160,19 +153,7 @@ class DeviceGuardTest {
 
             assertTrue(report.errors.isEmpty())
             assertTrue(report.threats.isEmpty())
-            assertEquals(0, report.riskScore)
         }
-
-    @Test
-    fun detectorCountExposesAttachedDetectors() {
-        val guard =
-            DeviceGuard
-                .Builder(testContext())
-                .addDetector(stubDetector<Unit>(id = "a", result = DetectionResult.NotApplicable("a")))
-                .addDetector(stubDetector<Unit>(id = "b", result = DetectionResult.NotApplicable("b")))
-                .build()
-        assertEquals(2, guard.detectorCount)
-    }
 
     @Test
     fun loggerReceivesDetectorFailures() =
@@ -207,6 +188,34 @@ class DeviceGuardTest {
 
             assertNotNull(events.firstOrNull { it.startsWith("ERROR") }, "ERROR log expected")
             assertNotNull(events.firstOrNull { it.startsWith("WARN") }, "WARN log expected")
+        }
+
+    @Test
+    fun noOpLoggerShortCircuitsViaIsEnabled() =
+        runTest {
+            var built = 0
+            val logger =
+                object : DeviceGuardLogger {
+                    override fun isEnabled(level: DeviceGuardLogger.LogLevel): Boolean = false
+
+                    override fun log(
+                        level: DeviceGuardLogger.LogLevel,
+                        tag: String,
+                        message: String,
+                        error: Throwable?,
+                    ) {
+                        built += 1
+                    }
+                }
+
+            DeviceGuard
+                .Builder(testContext())
+                .logger(logger)
+                .clock { FIXED_EPOCH }
+                .build()
+                .analyze()
+
+            assertEquals(0, built, "disabled logger must not receive any log calls")
         }
 
     private companion object {

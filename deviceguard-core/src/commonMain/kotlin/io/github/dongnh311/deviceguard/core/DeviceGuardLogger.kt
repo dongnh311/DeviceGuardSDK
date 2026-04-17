@@ -5,17 +5,14 @@ package io.github.dongnh311.deviceguard.core
  *
  * Implementations must be thread-safe; [DeviceGuard.analyze] may call [log] from any coroutine
  * dispatcher. Use [NoOp] when you want to silence output entirely, or [Println] during local
- * debugging.
+ * debugging. Override [isEnabled] to cheaply filter levels — the orchestrator checks it before
+ * building each message.
  */
 public interface DeviceGuardLogger {
-    /**
-     * Log a single event.
-     *
-     * @param level severity of the event.
-     * @param tag short identifier for the source component.
-     * @param message human-readable message.
-     * @param error optional throwable associated with the event.
-     */
+    /** Returns `false` if events at [level] should be skipped entirely. */
+    public fun isEnabled(level: LogLevel): Boolean = true
+
+    /** Log a single event. [error] is non-null only for levels that carry a throwable. */
     public fun log(
         level: LogLevel,
         tag: String,
@@ -36,14 +33,14 @@ public interface DeviceGuardLogger {
         /** Logger that discards every event. Default for release builds. */
         public val NoOp: DeviceGuardLogger =
             object : DeviceGuardLogger {
+                override fun isEnabled(level: LogLevel): Boolean = false
+
                 override fun log(
                     level: LogLevel,
                     tag: String,
                     message: String,
                     error: Throwable?,
-                ) {
-                    // Intentionally empty.
-                }
+                ) = Unit
             }
 
         /** Logger that routes every event through [println]. Useful for sample apps and tests. */

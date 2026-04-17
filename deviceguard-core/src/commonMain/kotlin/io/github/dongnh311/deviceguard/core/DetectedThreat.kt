@@ -20,14 +20,11 @@ public data class DetectedThreat(
     public val indicators: List<String> = emptyList(),
 ) {
     init {
-        require(type.isNotBlank()) { "Threat type id must not be blank" }
         require(confidence in 0f..1f) { "confidence must be within 0f..1f" }
         require(weight in 0..MAX_WEIGHT) { "weight must be within 0..$MAX_WEIGHT" }
     }
 
     public companion object {
-        private const val MAX_WEIGHT = 100
-
         /** Factory that pulls [weight] and [type] defaults from [threat]. */
         public fun of(
             threat: ThreatType,
@@ -43,3 +40,5 @@ public data class DetectedThreat(
             )
     }
 }
+
+internal const val MAX_WEIGHT: Int = 100

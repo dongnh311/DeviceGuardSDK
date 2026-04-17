@@ -1,5 +1,7 @@
 package io.github.dongnh311.deviceguard.core
 
+import kotlin.math.roundToInt
+
 /**
  * Strategy for collapsing a list of [DetectedThreat]s into a single `0..100` risk score.
  *
@@ -18,16 +20,6 @@ public fun interface RiskScoring {
  * remaining additive for low-severity signals.
  */
 public object WeightedSumScoring : RiskScoring {
-    private const val MIN = 0
-    private const val MAX = 100
-
-    override fun score(threats: List<DetectedThreat>): Int {
-        if (threats.isEmpty()) return 0
-        var total = 0
-        for (threat in threats) {
-            total += (threat.weight * threat.confidence).toInt()
-            if (total >= MAX) return MAX
-        }
-        return total.coerceIn(MIN, MAX)
-    }
+    override fun score(threats: List<DetectedThreat>): Int =
+        threats.sumOf { (it.weight * it.confidence).roundToInt() }.coerceIn(0, MAX_WEIGHT)
 }

@@ -14,7 +14,7 @@ public interface Detector<out T> {
     /** Stable identifier, used for keying signals, errors, and log messages. */
     public val id: String
 
-    /** Short human-readable description shown in logs. Defaults to [id]. */
+    /** Short human-readable description shown in logs. */
     public val description: String
         get() = id
 

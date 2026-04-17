@@ -15,8 +15,4 @@ public data class DetectorError(
     public val detectorId: String,
     public val message: String,
     public val errorType: String? = null,
-) {
-    init {
-        require(detectorId.isNotBlank()) { "detectorId must not be blank" }
-    }
-}
+)

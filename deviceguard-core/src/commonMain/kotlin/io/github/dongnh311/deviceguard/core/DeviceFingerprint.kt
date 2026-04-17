@@ -20,9 +20,4 @@ public data class DeviceFingerprint(
     public val id: String,
     public val signals: Map<String, String>,
     public val version: Int = 1,
-) {
-    init {
-        require(id.isNotBlank()) { "Fingerprint id must not be blank" }
-        require(version > 0) { "version must be positive" }
-    }
-}
+)

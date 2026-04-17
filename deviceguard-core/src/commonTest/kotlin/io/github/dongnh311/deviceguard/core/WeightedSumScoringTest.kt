@@ -1,5 +1,6 @@
 package io.github.dongnh311.deviceguard.core
 
+import kotlin.math.roundToInt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -18,7 +19,7 @@ class WeightedSumScoringTest {
     @Test
     fun confidenceScalesWeightLinearly() {
         val threat = DetectedThreat.of(ThreatType.Emulator, confidence = 0.5f)
-        val expected = (ThreatType.Emulator.defaultWeight * 0.5f).toInt()
+        val expected = (ThreatType.Emulator.defaultWeight * 0.5f).roundToInt()
         assertEquals(expected, WeightedSumScoring.score(listOf(threat)))
     }
 
@@ -47,7 +48,6 @@ class WeightedSumScoringTest {
     @Test
     fun customThreatWeightApplies() {
         val custom = ThreatType.Custom(id = "my_custom_threat", defaultWeight = 12)
-        val threat = DetectedThreat.of(custom)
-        assertEquals(12, WeightedSumScoring.score(listOf(threat)))
+        assertEquals(12, WeightedSumScoring.score(listOf(DetectedThreat.of(custom))))
     }
 }
