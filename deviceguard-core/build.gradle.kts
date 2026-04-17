@@ -64,6 +64,12 @@ kotlin {
                 implementation(libs.mockk)
             }
         }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.junit)
+                implementation(libs.mockk)
+            }
+        }
     }
 }
 
