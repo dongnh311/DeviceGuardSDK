@@ -1,2 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      Android 11+ restricts package visibility. Declare Xposed / LSPosed / instrumentation
+      manager packages so PackageManager.getInstalledPackages() can see them from the
+      consumer app without the broad QUERY_ALL_PACKAGES permission.
+
+      Keep in sync with HOOK_PACKAGES in IntegrityCheck.android.kt.
+    -->
+    <queries>
+        <package android:name="de.robv.android.xposed.installer" />
+        <package android:name="org.lsposed.manager" />
+        <package android:name="io.va.exposed" />
+        <package android:name="com.topjohnwu.magisk" />
+    </queries>
+</manifest>
