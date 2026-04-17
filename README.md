@@ -47,6 +47,53 @@ println("Threats: ${report.threats}")
 println("Device ID: ${report.fingerprint.id}")
 ```
 
+## Sample apps
+
+`sample/` ships a Compose Multiplatform demo across every target. The UI lives once in
+`sample/shared/` (Material 3, Compose Multiplatform 1.7.x); each platform wrapper is a
+thin entry point that hosts the shared `App()` composable.
+
+Every app shows the same screen: toggle detectors, tap **Analyze**, inspect the live
+`SecurityReport` — risk score with a coloured progress bar, threat list, fingerprint id,
+error list, and end-to-end timing.
+
+| App | CI | Run locally |
+|-----|----|-------------|
+| `sample/shared` | linked via CI builds below | — (library) |
+| `sample/android` | ✅ `assembleDebug` | `./gradlew :sample:android:installDebug` (device or emulator), or open in Android Studio |
+| `sample/desktop` | ✅ `jar` | `./gradlew :sample:desktop:run` |
+| `sample/web` | ✅ `jsBrowserProductionWebpack` (artefact uploaded) | `./gradlew :sample:web:jsBrowserDevelopmentRun` → <http://localhost:8080> |
+| `sample/ios` | ✅ `xcodegen` + `xcodebuild` on Simulator | `cd sample/ios && xcodegen && open DeviceGuardSample.xcodeproj`; then Run in Xcode |
+
+### Manual QA matrix
+
+Before the first release, each threat path must fire at least once on a real target. The
+table below is the checklist for that sweep — tick boxes as devices are exercised.
+
+| Platform | Environment | Expected primary threats | Status |
+|----------|-------------|--------------------------|--------|
+| Android | Stock Pixel / Samsung / Xiaomi | `SAFE` or `LOW` | ☐ |
+| Android | AOSP emulator (Google APIs image) | `Root`, `Emulator` | ☐ |
+| Android | Google Play emulator image | `Emulator` only | ☐ |
+| Android | Rooted device + Magisk (no hide) | `Root`, `HookFramework` if Zygisk modules | ☐ |
+| Android | Device on corporate VPN | `VpnActive` | ☐ |
+| Android | Device with `http.proxyHost` set | `ProxyActive` | ☐ |
+| Android | Re-signed APK, wrong expected signature | `SignatureMismatch` | ☐ |
+| iOS | Stock iPhone | `SAFE` | ☐ |
+| iOS | iOS Simulator | `Emulator` | ☐ |
+| iOS | Jailbroken iPhone (palera1n / Dopamine) | `Jailbreak`, possibly `HookFramework` | ☐ |
+| JVM / Desktop | Plain launch | `SAFE` | ☐ |
+| JVM / Desktop | Launched under IntelliJ Debug (JDWP) | `DebuggerAttached` | ☐ |
+| JVM / Desktop | `-Dhttp.proxyHost=proxy.example.com` | `ProxyActive` | ☐ |
+| JVM / Desktop | Connected to VPN (utun / tun interface up) | `VpnActive` | ☐ |
+| JS / Web | Chrome, normal session | `SAFE` | ☐ |
+| JS / Web | Chrome with DevTools open | possibly `DebuggerAttached` | ☐ |
+| JS / Web | Selenium / Playwright automation | `Emulator` (`navigator.webdriver`) | ☐ |
+
+The v0.1.0 publish (Phase 9) is gated on every row above being confirmed on a real host.
+Recording a short video or sharing the `Copy JSON report` payload per row is enough
+evidence — attach to the release notes PR.
+
 ## Modules
 
 | Module | Status | Purpose |

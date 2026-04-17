@@ -67,6 +67,8 @@ formatting:
   active: true
   android: false
   autoCorrect: false
+  Indentation:
+    active: false
   MaximumLineLength:
     active: true
     maxLineLength: 140
@@ -77,6 +79,7 @@ naming:
   active: true
   FunctionNaming:
     functionPattern: '[a-z][a-zA-Z0-9]*'
+    ignoreAnnotated: ['Composable']
 
 performance:
   active: true

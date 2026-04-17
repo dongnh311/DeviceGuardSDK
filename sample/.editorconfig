@@ -1,0 +1,7 @@
+root = false
+
+[*.{kt,kts}]
+# Composable functions follow PascalCase by convention — ktlint's default
+# function-naming rule doesn't understand @Composable, so disable it only
+# under sample/ where Compose UI lives.
+ktlint_standard_function-naming = disabled
