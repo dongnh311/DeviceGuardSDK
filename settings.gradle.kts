@@ -46,4 +46,8 @@ include(
     ":deviceguard-integrity",
     ":deviceguard-network",
     ":deviceguard-bom",
+    ":sample:shared",
+    ":sample:android",
+    ":sample:desktop",
+    ":sample:web",
 )

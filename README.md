@@ -47,6 +47,25 @@ println("Threats: ${report.threats}")
 println("Device ID: ${report.fingerprint.id}")
 ```
 
+## Sample apps
+
+`sample/` ships a Compose Multiplatform demo across every target. The UI lives once in
+`sample/shared/` (Material 3, Compose Multiplatform 1.7.x); each platform wrapper is a
+thin entry point that hosts the shared `App()` composable.
+
+| App | Build | Status |
+|-----|-------|--------|
+| `sample/shared` | — (library) | ✅ common UI + state holder |
+| `sample/android` | `./gradlew :sample:android:assembleDebug` | ✅ Activity wrapper |
+| `sample/desktop` | `./gradlew :sample:desktop:run` | ✅ single-window Compose Desktop |
+| `sample/web` | `./gradlew :sample:web:jsBrowserProductionWebpack` | ✅ canvas-based Compose for JS |
+| `sample/ios` | `:sample:shared:linkReleaseFrameworkIosSimulatorArm64` + Xcode project | ⏳ framework ready, Xcode app scaffolding follows |
+
+Each app shows the same screen: toggle detectors, tap **Analyze**, inspect the live
+`SecurityReport` — risk score with coloured progress bar, threat list, fingerprint id,
+error list, and timing. Run the Android app on a real device / emulator / rooted handset
+to see how each threat fires.
+
 ## Modules
 
 | Module | Status | Purpose |
