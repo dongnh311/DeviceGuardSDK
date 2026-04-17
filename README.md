@@ -53,17 +53,17 @@ println("Device ID: ${report.fingerprint.id}")
 | `deviceguard-rootcheck` | ✅ available | Root / Jailbreak detection |
 | `deviceguard-emulator` | ✅ available | Emulator / Debugger detection |
 | `deviceguard-integrity` | ✅ available | App tampering & hook detection |
-| `deviceguard-network` | 🚧 planned | VPN / Proxy / Tor inspection |
+| `deviceguard-network` | ✅ available | VPN / Proxy / Tor inspection |
 | `deviceguard-bom` | ✅ available | Bill of Materials for version alignment |
 
 ## Platforms
 
-| Platform | Core | Fingerprint | Root/Jailbreak | Emulator/Debugger | Integrity |
-|----------|------|-------------|----------------|-------------------|-----------|
-| Android (API 21+) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| iOS (13+) | ✅ | ✅ | ✅ (jailbreak) | ✅ (simulator; debugger TBD) | ✅ (Frida artefacts; re-sign TBD) |
-| JVM / Desktop | ✅ | ✅ | — not applicable | ✅ (JDWP) | — deferred |
-| JS / Web | ✅ | ✅ (best-effort, browser only) | — not applicable | ✅ (webdriver; best-effort) | — deferred |
+| Platform | Core | Fingerprint | Root/Jailbreak | Emulator/Debugger | Integrity | Network |
+|----------|------|-------------|----------------|-------------------|-----------|---------|
+| Android (API 21+) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| iOS (13+) | ✅ | ✅ | ✅ (jailbreak) | ✅ (simulator; debugger TBD) | ✅ (Frida artefacts; re-sign TBD) | — deferred (cinterop) |
+| JVM / Desktop | ✅ | ✅ | — not applicable | ✅ (JDWP) | — deferred | ✅ |
+| JS / Web | ✅ | ✅ (best-effort, browser only) | — not applicable | ✅ (webdriver; best-effort) | — deferred | — deferred |
 
 ## Fingerprinting
 
@@ -184,6 +184,40 @@ valid"** — on platforms that skip the signature stream both fields are false, 
 detector advertises this via the `integritycheck.signature_check_run` signal. The
 `expectedSignature` string is accepted in `keytool`-style `AB:CD:EF:…` hex with
 whitespace; the detector normalises to lowercase packed hex before comparison.
+
+## VPN / proxy detection
+
+`deviceguard-network` surfaces active VPN tunnels and HTTP/SOCKS proxy routing. Opt in via
+`DeviceGuard.Builder(context).enableNetworkCheck()`. Two disjoint indicator streams feed two
+independent confidences at a fixed `0.5` threshold: `ThreatType.VpnActive` and
+`ThreatType.ProxyActive`.
+
+VPN / proxy presence is not inherently hostile — corporate deployments, privacy-focused
+users, and ISPs all legitimately terminate on tunnels — so the emitted threats carry
+intentionally low default weights. The detector surfaces the state; the risk-scoring
+strategy decides how much it matters.
+
+Signals per platform:
+
+- **Android** — VPN: `ConnectivityManager.getActiveNetwork()` +
+  `getNetworkCapabilities()` reporting `TRANSPORT_VPN` or lacking
+  `NET_CAPABILITY_NOT_VPN` (weight 1.0, API 23+ only; API 21/22 falls back to the
+  interface scan); `NetworkInterface` named `tun*`/`utun*`/`ipsec*`/`ppp*`/`wg*`/`tap*`
+  while up (weight 0.8). Proxy: `http.proxyHost` / `https.proxyHost` (weight 1.0 each);
+  `socksProxyHost` (weight 0.9). Module manifest declares `ACCESS_NETWORK_STATE`.
+- **JVM / Desktop** — VPN: `NetworkInterface.getNetworkInterfaces()` scan for the same
+  prefixes (weight 1.0). Proxy: `http`/`https`/`socks` system properties (1.0 / 1.0 / 0.9)
+  plus `ProxySelector.getDefault().select(…)` returning a non-DIRECT proxy (weight 0.8).
+- **iOS** — `NotApplicable` pending a dedicated cinterop for `getifaddrs()`. The posix
+  bindings shipped by default Kotlin/Native don't expose it, and the
+  `SCNetworkInterface` / `NEVPNManager` alternatives need more surface. Deferred to a
+  follow-up that won't change the public API.
+- **JS / Web** — `NotApplicable`. Reliable in-browser VPN/proxy detection needs
+  server-side IP correlation.
+
+`NetworkCheckResult` carries `vpnActive`, `proxyActive`, confidences, and separate
+`vpnIndicators` / `proxyIndicators` lists so consumers don't parse prefixes. Interface
+matching is case-insensitive (`TAP0` on Windows and `utun3` on macOS both count).
 
 ## Building
 
