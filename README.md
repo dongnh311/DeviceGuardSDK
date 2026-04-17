@@ -51,19 +51,19 @@ println("Device ID: ${report.fingerprint.id}")
 | `deviceguard-core` | ✅ available | Public API, models, orchestrator |
 | `deviceguard-fingerprint` | ✅ available | Stable cross-platform device ID |
 | `deviceguard-rootcheck` | ✅ available | Root / Jailbreak detection |
-| `deviceguard-emulator` | 🚧 planned | Emulator / Debugger detection |
+| `deviceguard-emulator` | ✅ available | Emulator / Debugger detection |
 | `deviceguard-integrity` | 🚧 planned | App tampering & hook detection |
 | `deviceguard-network` | 🚧 planned | VPN / Proxy / Tor inspection |
 | `deviceguard-bom` | ✅ available | Bill of Materials for version alignment |
 
 ## Platforms
 
-| Platform | Core | Fingerprint | Root/Jailbreak |
-|----------|------|-------------|----------------|
-| Android (API 21+) | ✅ | ✅ | ✅ |
-| iOS (13+) | ✅ | ✅ | ✅ (jailbreak) |
-| JVM / Desktop | ✅ | ✅ | — not applicable |
-| JS / Web | ✅ | ✅ (best-effort, browser only) | — not applicable |
+| Platform | Core | Fingerprint | Root/Jailbreak | Emulator/Debugger |
+|----------|------|-------------|----------------|-------------------|
+| Android (API 21+) | ✅ | ✅ | ✅ | ✅ |
+| iOS (13+) | ✅ | ✅ | ✅ (jailbreak) | ✅ (simulator; debugger TBD) |
+| JVM / Desktop | ✅ | ✅ | — not applicable | ✅ (JDWP) |
+| JS / Web | ✅ | ✅ (best-effort, browser only) | — not applicable | ✅ (webdriver; best-effort) |
 
 ## Fingerprinting
 
@@ -109,6 +109,38 @@ Signals per platform:
 When `isRooted` is true, the detector adds a `ThreatType.Root` (Android) or
 `ThreatType.Jailbreak` (iOS) threat to `SecurityReport.threats` with the aggregated
 confidence. The `indicators` list is suitable for forensic logging and contains no PII.
+
+## Emulator / Debugger detection
+
+`deviceguard-emulator` surfaces emulator / virtual-device signals alongside
+attached-debugger signals. Opt in via
+`DeviceGuard.Builder(context).enableEmulatorCheck()`. Two disjoint indicator lists feed
+two independent confidences (each clamped to `[0, 1]`) and trip
+`ThreatType.Emulator` / `ThreatType.DebuggerAttached` independently at a fixed `0.5`
+threshold — so a debug build attached to an IDE on a real device produces a debugger
+threat but not an emulator threat, and vice versa.
+
+Signals per platform:
+
+- **Android** — emulator: `Build.HARDWARE` ∈ {`goldfish`, `ranchu`}, `Build.MANUFACTURER`
+  contains `Genymotion`, `Build.FINGERPRINT` starts with `generic` or contains `/sdk_`,
+  `Build.PRODUCT` contains `sdk`/`emulator`, `/dev/qemu_pipe` or `/dev/socket/qemud`
+  exists. Debugger: `android.os.Debug.isDebuggerConnected()` (weight 1.0),
+  `waitingForDebugger()` (weight 0.6).
+- **iOS** — emulator: `NSProcessInfo.processInfo.environment` contains
+  `SIMULATOR_DEVICE_NAME` / `SIMULATOR_MODEL_IDENTIFIER` / `SIMULATOR_HOST_HOME`
+  (weight 1.0 each). Debugger: `sysctl` `P_TRACED` probe deferred to a follow-up.
+- **JVM** — emulator: `java.vm.name` ∈ {`Dalvik`, `ART`} (weight 0.5, weak signal for
+  Android-on-PC runtimes). Debugger: `RuntimeMXBean.inputArguments` carries
+  `-agentlib:jdwp`, `-Xrunjdwp`, or `-Xdebug` (weight 1.0).
+- **JS** — emulator: `navigator.webdriver === true` for WebDriver/Selenium and most
+  headless browsers (weight 0.9). Debugger: `window.outerHeight == 0` DevTools heuristic
+  (weight 0.5). Node callers — where `window` is absent — see an empty outcome.
+
+When a threat fires, `EmulatorCheckResult` carries separate `emulatorIndicators` and
+`debuggerIndicators` lists so consumers don't need to parse prefixed strings to route
+forensic logging. Unlike root detection, no `strict` knob is exposed — the primary
+signals are deterministic (weight 1.0) and the threshold is a fixed `0.5`.
 
 ## Building
 
