@@ -50,7 +50,7 @@ println("Device ID: ${report.fingerprint.id}")
 |--------|--------|---------|
 | `deviceguard-core` | ✅ available | Public API, models, orchestrator |
 | `deviceguard-fingerprint` | ✅ available | Stable cross-platform device ID |
-| `deviceguard-rootcheck` | 🚧 planned | Root / Jailbreak detection |
+| `deviceguard-rootcheck` | ✅ available | Root / Jailbreak detection |
 | `deviceguard-emulator` | 🚧 planned | Emulator / Debugger detection |
 | `deviceguard-integrity` | 🚧 planned | App tampering & hook detection |
 | `deviceguard-network` | 🚧 planned | VPN / Proxy / Tor inspection |
@@ -58,12 +58,12 @@ println("Device ID: ${report.fingerprint.id}")
 
 ## Platforms
 
-| Platform | Core | Fingerprint |
-|----------|------|-------------|
-| Android (API 21+) | ✅ | ✅ |
-| iOS (13+) | ✅ | ✅ |
-| JVM / Desktop | ✅ | ✅ |
-| JS / Web | ✅ | ✅ (best-effort, browser only) |
+| Platform | Core | Fingerprint | Root/Jailbreak |
+|----------|------|-------------|----------------|
+| Android (API 21+) | ✅ | ✅ | ✅ |
+| iOS (13+) | ✅ | ✅ | ✅ (jailbreak) |
+| JVM / Desktop | ✅ | ✅ | — not applicable |
+| JS / Web | ✅ | ✅ (best-effort, browser only) | — not applicable |
 
 ## Fingerprinting
 
@@ -83,6 +83,32 @@ Signals collected per platform:
 
 No IMEI, advertising id, account name, email, or other directly identifying value is read —
 the fingerprint is stable across app launches but invalidates on a factory reset or MAC change.
+
+## Root / Jailbreak detection
+
+`deviceguard-rootcheck` surfaces root on Android and jailbreak on iOS. Opt in via
+`DeviceGuard.Builder(context).enableRootCheck(strict = true)`. The detector aggregates
+per-signal weights in `[0.0, 1.0]` and trips `RootCheckResult.isRooted` at:
+
+- `strict = false` (default): confidence ≥ 0.5 — a single strong signal wins.
+- `strict = true`: confidence ≥ 0.2 — any moderate signal wins.
+
+Signals per platform:
+
+- **Android** — 13 known `su`/Superuser/Magisk binary paths (weight 1.0); a single
+  `PackageManager.getInstalledPackages()` scan matched against 12 root-tooling package names
+  (weight 0.9); `Build.TAGS` contains `test-keys` (weight 0.3). The module's manifest
+  pre-declares the package list under `<queries>` so it works on Android 11+ without
+  `QUERY_ALL_PACKAGES`.
+- **iOS** — 14 known jailbreak artifact paths (Cydia, Sileo, Zebra, MobileSubstrate,
+  `/bin/bash`, apt cache, etc.) via `NSFileManager.fileExistsAtPath` (weight 0.9); a
+  sandbox-escape write probe at `/private/DeviceGuardProbe-<uuid>.txt` with `try/finally`
+  cleanup (weight 1.0).
+- **JVM / JS** — not applicable; the detector emits `DetectionResult.NotApplicable`.
+
+When `isRooted` is true, the detector adds a `ThreatType.Root` (Android) or
+`ThreatType.Jailbreak` (iOS) threat to `SecurityReport.threats` with the aggregated
+confidence. The `indicators` list is suitable for forensic logging and contains no PII.
 
 ## Building
 
