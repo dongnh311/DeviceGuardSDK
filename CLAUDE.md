@@ -66,6 +66,48 @@ Core types: `SecurityReport`, `ThreatType` (sealed), `RiskLevel` (enum), `Detect
 4. Unstable APIs gated behind `@ExperimentalDeviceGuardApi`.
 5. Semantic versioning — no breaking changes without major bump.
 
+## PR workflow — `/simplify` before `gh pr create`
+
+Never open a PR on raw first-pass code. Every PR branch must go through a
+review pass before `gh pr create`:
+
+1. Finish the feature work and make `./gradlew build` green.
+2. Run **`/simplify`** on the branch diff. The skill fans out three agents
+   (code reuse, code quality, efficiency) in parallel. Read all three
+   reports.
+3. Apply the high-confidence findings directly. Skip false positives without
+   arguing — note them and move on.
+4. Commit the simplify fixes with a subject starting `simplify:` or `review:`
+   (or anywhere containing the phrase `simplify review`). Example:
+   `review: simplify Phase N — drop dead code, cut hot-path cost`.
+5. Push the branch.
+6. Run `gh pr create`.
+
+A PreToolUse hook at `.claude/hooks/require-simplify.sh` enforces this. It
+inspects the last 10 commits on the current branch (relative to `origin/main`)
+for the sentinel commit and blocks `gh pr create` if none is found. The hook
+leaves `gh pr view`, `gh pr list`, `gh pr comment`, `gh pr merge`, etc.
+untouched — only creation is gated.
+
+**Review rules for `/simplify`:**
+
+- **Reuse agent** — flag hand-rolled logic that stdlib / kotlinx / project
+  helpers already cover (e.g. `sumOf`/`coerceIn` instead of a manual
+  accumulator, `Clock.System.now()` instead of hand-rolled epoch math).
+- **Quality agent** — derivable state, parameter sprawl, copy-paste variants
+  (sealed hierarchies with repeated overrides are the common culprit), leaky
+  public API (`internal` candidates that slipped out as `public`, annotations
+  abused as test-only escape hatches), stringly-typed code, over-validation
+  in `init` blocks, redundant KDoc that restates the identifier, and tests
+  that exercise nothing the siblings don't already cover.
+- **Efficiency agent** — hot-path allocations, eager log-message
+  interpolation when the sink is a `NoOp`, sequential work that could be
+  parallel, JSON `encodeDefaults` bloat, linear scans that could saturate
+  early, and cancellation-catch ordering bugs.
+
+The DeviceGuard SDK has a hard perf budget — `analyze()` p95 < 200ms on a
+mid-tier device — so the efficiency agent's findings are not optional.
+
 ## Quality Gates
 
 - Detekt: zero critical warnings
