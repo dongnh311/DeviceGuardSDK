@@ -69,19 +69,26 @@ Core types: `SecurityReport`, `ThreatType` (sealed), `RiskLevel` (enum), `Detect
 ## PR workflow — `/simplify` before `gh pr create`
 
 Never open a PR on raw first-pass code. Every PR branch must go through a
-review pass before `gh pr create`:
+review pass before `gh pr create`. Run `/simplify` **before** the final
+build — agents read source, not bytecode, so syntax noise in a
+work-in-progress diff isn't a blocker for the review, and applying fixes
+before the final verification run saves a build cycle:
 
-1. Finish the feature work and make `./gradlew build` green.
+1. Finish the feature work.
 2. Run **`/simplify`** on the branch diff. The skill fans out three agents
    (code reuse, code quality, efficiency) in parallel. Read all three
    reports.
 3. Apply the high-confidence findings directly. Skip false positives without
    arguing — note them and move on.
-4. Commit the simplify fixes with a subject starting `simplify:` or `review:`
-   (or anywhere containing the phrase `simplify review`). Example:
-   `review: simplify Phase N — drop dead code, cut hot-path cost`.
-5. Push the branch.
-6. Run `gh pr create`.
+4. Run `./gradlew build` (and `iosSimulatorArm64Test` on macOS) to verify
+   the post-review code is green across all targets.
+5. Update `README.md` if the diff changes any public-facing surface.
+6. Commit everything together with a subject line that carries the
+   `simplify:` / `review:` / `simplify review` sentinel (see
+   `.claude/hooks/require-simplify.sh`). Example:
+   `Phase N: <feature> — review: simplify <notes>`.
+7. Push the branch.
+8. Run `gh pr create`.
 
 A PreToolUse hook at `.claude/hooks/require-simplify.sh` enforces this. It
 inspects the last 10 commits on the current branch (relative to `origin/main`)
