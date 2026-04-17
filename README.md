@@ -254,7 +254,14 @@ per-run blocking work fail the suite.
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) (coming soon). Security issues — see [`SECURITY.md`](SECURITY.md) (coming soon).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for dev setup and the PR workflow. Participation is
+governed by our [Code of Conduct](CODE_OF_CONDUCT.md). Release history is tracked in
+[`CHANGELOG.md`](CHANGELOG.md).
+
+## Security
+
+Do **not** file a public issue for security vulnerabilities. Follow the private disclosure
+process in [`SECURITY.md`](SECURITY.md).
 
 ## License
 
