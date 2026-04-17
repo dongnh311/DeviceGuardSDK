@@ -1,2 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      ConnectivityManager.getActiveNetwork / getNetworkCapabilities on API 23+ requires
+      the ACCESS_NETWORK_STATE normal permission. Declared here so consumers don't have
+      to know; manifest merge is additive and the permission is already present in most
+      apps that touch the network.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+</manifest>
