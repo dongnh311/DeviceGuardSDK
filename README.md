@@ -52,18 +52,18 @@ println("Device ID: ${report.fingerprint.id}")
 | `deviceguard-fingerprint` | ✅ available | Stable cross-platform device ID |
 | `deviceguard-rootcheck` | ✅ available | Root / Jailbreak detection |
 | `deviceguard-emulator` | ✅ available | Emulator / Debugger detection |
-| `deviceguard-integrity` | 🚧 planned | App tampering & hook detection |
+| `deviceguard-integrity` | ✅ available | App tampering & hook detection |
 | `deviceguard-network` | 🚧 planned | VPN / Proxy / Tor inspection |
 | `deviceguard-bom` | ✅ available | Bill of Materials for version alignment |
 
 ## Platforms
 
-| Platform | Core | Fingerprint | Root/Jailbreak | Emulator/Debugger |
-|----------|------|-------------|----------------|-------------------|
-| Android (API 21+) | ✅ | ✅ | ✅ | ✅ |
-| iOS (13+) | ✅ | ✅ | ✅ (jailbreak) | ✅ (simulator; debugger TBD) |
-| JVM / Desktop | ✅ | ✅ | — not applicable | ✅ (JDWP) |
-| JS / Web | ✅ | ✅ (best-effort, browser only) | — not applicable | ✅ (webdriver; best-effort) |
+| Platform | Core | Fingerprint | Root/Jailbreak | Emulator/Debugger | Integrity |
+|----------|------|-------------|----------------|-------------------|-----------|
+| Android (API 21+) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| iOS (13+) | ✅ | ✅ | ✅ (jailbreak) | ✅ (simulator; debugger TBD) | ✅ (Frida artefacts; re-sign TBD) |
+| JVM / Desktop | ✅ | ✅ | — not applicable | ✅ (JDWP) | — deferred |
+| JS / Web | ✅ | ✅ (best-effort, browser only) | — not applicable | ✅ (webdriver; best-effort) | — deferred |
 
 ## Fingerprinting
 
@@ -141,6 +141,49 @@ When a threat fires, `EmulatorCheckResult` carries separate `emulatorIndicators`
 `debuggerIndicators` lists so consumers don't need to parse prefixed strings to route
 forensic logging. Unlike root detection, no `strict` knob is exposed — the primary
 signals are deterministic (weight 1.0) and the threshold is a fixed `0.5`.
+
+## App integrity
+
+`deviceguard-integrity` surfaces app-tampering and dynamic-instrumentation signals. Opt in
+via `DeviceGuard.Builder(context).enableIntegrityCheck(expectedSignature, trustedInstallers)`.
+Two disjoint indicator streams feed two independent confidences at a fixed `0.5` threshold:
+`ThreatType.SignatureMismatch` and `ThreatType.HookFramework`.
+
+```kotlin
+val guard = DeviceGuard.Builder(context)
+    .enableIntegrityCheck(
+        expectedSignature = "1A:2B:3C:…",               // keytool-format accepted
+        trustedInstallers = setOf("com.android.vending"),
+    )
+    .build()
+```
+
+Signals per platform:
+
+- **Android** — signing-certificate SHA-256 vs `expectedSignature` (weight 1.0); signing
+  read failure (weight 0.5, fires when `PackageManager` can't read the signing info);
+  Android Studio's default debug cert SHA-1 (weight 0.4, intentionally weak — swappable
+  by the build system); installer outside `trustedInstallers` (weight 0.3, skipped if the
+  set is empty). Hook: Xposed installer, LSPosed manager, Virtual-Exposed, or Magisk is
+  visible via a single `getInstalledPackages()` call (weight 1.0). The manifest declares
+  those packages under `<queries>` so detection works on Android 11+ without
+  `QUERY_ALL_PACKAGES`.
+- **iOS** — Frida artefacts across traditional and rootless (Dopamine / palera1n) jailbreak
+  layouts: FridaGadget framework, `frida-agent` / `frida-gadget` dylibs under
+  `/usr/lib/frida/` and `/var/jb/usr/lib/frida/`, `frida-server`, Cycript (weight 1.0
+  each). Signature stream: `NSBundle.mainBundle.bundleIdentifier == nil` (weight 0.6).
+  Full `SecStaticCodeCheckValidity`, in-memory `_dyld_image_count` scanning, and
+  `embedded.mobileprovision` inspection are deferred.
+- **JVM / JS** — not applicable; desktop JAR verification and browser SRI have materially
+  different threat models.
+
+`IntegrityCheckResult` exposes `signatureMismatch`, `hookFrameworkDetected`,
+`signatureCheckRun`, confidences, and separate indicator lists. **Always read
+`signatureCheckRun` before treating `signatureMismatch == false` as "signature is
+valid"** — on platforms that skip the signature stream both fields are false, and the
+detector advertises this via the `integritycheck.signature_check_run` signal. The
+`expectedSignature` string is accepted in `keytool`-style `AB:CD:EF:…` hex with
+whitespace; the detector normalises to lowercase packed hex before comparison.
 
 ## Building
 
