@@ -10,6 +10,12 @@
             "command": "bash .claude/hooks/require-simplify.sh",
             "timeout": 5,
             "statusMessage": "Checking /simplify sentinel"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/require-readme-touch.sh",
+            "timeout": 5,
+            "statusMessage": "Checking README.md touch"
           }
         ]
       }
