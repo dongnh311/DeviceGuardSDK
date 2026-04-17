@@ -1,0 +1,74 @@
+site_name: DeviceGuard SDK
+site_description: Kotlin Multiplatform SDK for device security — fingerprint, root/jailbreak, emulator, integrity, network.
+site_url: https://dongnh311.github.io/DeviceGuardSDK/
+repo_url: https://github.com/dongnh311/DeviceGuardSDK
+repo_name: dongnh311/DeviceGuardSDK
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - content.action.edit
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture.md
+  - Platform Guides:
+      - platforms/index.md
+      - Android: platforms/android.md
+      - iOS: platforms/ios.md
+      - JVM / Desktop: platforms/jvm.md
+      - JS / Web: platforms/js.md
+  - Security Considerations: security-considerations.md
+  - Migration Guide: migration.md
+  - API Reference: https://dongnh311.github.io/DeviceGuardSDK/api/
+  - Contributing: https://github.com/dongnh311/DeviceGuardSDK/blob/main/CONTRIBUTING.md
+  - Changelog: https://github.com/dongnh311/DeviceGuardSDK/blob/main/CHANGELOG.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/dongnh311/DeviceGuardSDK

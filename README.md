@@ -1,10 +1,13 @@
 # DeviceGuard SDK
 
 [![Build](https://github.com/dongnh311/DeviceGuardSDK/actions/workflows/ci.yml/badge.svg)](https://github.com/dongnh311/DeviceGuardSDK/actions/workflows/ci.yml)
+[![Docs](https://github.com/dongnh311/DeviceGuardSDK/actions/workflows/docs.yml/badge.svg)](https://dongnh311.github.io/DeviceGuardSDK/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0%2B-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 
 > Kotlin Multiplatform SDK for comprehensive device security: fingerprinting, root/jailbreak detection, emulator detection, app integrity, and network inspection — on Android, iOS, JVM/Desktop, and Web.
+
+**📘 Full documentation:** <https://dongnh311.github.io/DeviceGuardSDK/>
 
 ## Status
 
