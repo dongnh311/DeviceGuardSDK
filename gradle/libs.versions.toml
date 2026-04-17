@@ -5,6 +5,7 @@ coroutines = "1.9.0"
 serialization = "1.7.3"
 datetime = "0.6.1"
 kotlinx-io = "0.5.4"
+kotlincrypto-hash = "0.5.3"
 mockk = "1.13.13"
 androidx-test-runner = "1.6.2"
 androidx-test-core = "1.6.1"
@@ -27,6 +28,7 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
+kotlincrypto-hash-sha2 = { module = "org.kotlincrypto.hash:sha2", version.ref = "kotlincrypto-hash" }
 
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
