@@ -65,12 +65,21 @@ guard.observe(periodMs = 5_000L).collect { report ->
 
 Minimum period is `500 ms` — leaves headroom above the 200 ms p95 per-analyze budget.
 
-### Platform coverage of the new detectors
+### Detector × platform matrix — what it does and how it works
 
-| Detector | Android | iOS | Desktop JVM | Web |
+Legend: ✅ full coverage · ⚠️ partial / best-effort · — not applicable on this platform, or deferred pending a follow-up (cell text clarifies which). Both return `DetectionResult.NotApplicable` today.
+
+| Detector | Android | iOS | Desktop JVM | Web (JS) |
 |---|---|---|---|---|
-| `enableRemoteCheck()` | ✅ PackageManager + AccessibilityService scan for known remote-control apps | ⚠️ `UIScreen.isCaptured` only (screen mirror/record) — sandbox blocks app enumeration | ✅ `ProcessHandle` scan for known remote binaries | ❌ NotApplicable (sandbox) |
-| `enableSurveillanceCheck()` | ✅ 4 categories: accessibility abuse, notification listener, device admin, suspicious IME | ❌ NotApplicable (sandbox) — jailbreak threat implies elevated surveillance risk | ⚠️ Process-scan best-effort: automation tools + debuggers | ❌ NotApplicable (sandbox) |
+| **Fingerprint** (`enableFingerprint`) — stable non-PII device id | ✅ SHA-256 over `Build.MANUFACTURER/BRAND/MODEL/DEVICE/PRODUCT/HARDWARE`, `SDK_INT`, `SUPPORTED_ABIS`, `Settings.Secure.ANDROID_ID`, screen density/resolution, locale, timezone | ✅ SHA-256 over `UIDevice.systemName/version/model`, `identifierForVendor`, screen scale/bounds, locale, timezone | ✅ SHA-256 over `os.name/version/arch`, `java.vendor/version`, locale, timezone, SHA-256(first non-loopback MAC) | ⚠️ SHA-256 over `navigator.userAgent/platform/language/hardwareConcurrency`, screen resolution/colorDepth, timezone (best-effort — UA hardening degrades stability) |
+| **RootCheck** (`enableRootCheck`) — root / jailbreak | ✅ 13 `su`/Superuser/Magisk binary paths (w 1.0) · PackageManager scan against 12 root-tooling pkgs (w 0.9) · `Build.TAGS == test-keys` (w 0.3). Tripped at conf ≥ 0.5 (strict: ≥ 0.2) | ✅ 14 jailbreak artifact paths (Cydia, Sileo, Zebra, MobileSubstrate, /bin/bash…) via `NSFileManager` (w 0.9) · sandbox-escape write probe at `/private/…` (w 1.0) | — | — |
+| **EmulatorCheck** (`enableEmulatorCheck`) — virtual device + attached debugger (2 independent threats) | ✅ emulator: `Build.HARDWARE` ∈ {goldfish, ranchu}, Genymotion manufacturer, `FINGERPRINT` starts `generic`/contains `/sdk_`, `/dev/qemu_pipe`. Debugger: `Debug.isDebuggerConnected()` (w 1.0) + `waitingForDebugger()` (w 0.6) | ✅ emulator: `NSProcessInfo.environment` contains `SIMULATOR_DEVICE_NAME` / `SIMULATOR_MODEL_IDENTIFIER` / `SIMULATOR_HOST_HOME` (w 1.0). Debugger: `sysctl P_TRACED` deferred | ⚠️ emulator: `java.vm.name ∈ {Dalvik, ART}` (w 0.5 — Android-on-PC only). Debugger: `-agentlib:jdwp` / `-Xrunjdwp` / `-Xdebug` in `RuntimeMXBean.inputArguments` (w 1.0) | ⚠️ emulator: `navigator.webdriver === true` for Selenium/Playwright (w 0.9). Debugger: `window.outerHeight == 0` DevTools heuristic (w 0.5) |
+| **IntegrityCheck** (`enableIntegrityCheck`) — signing cert + hook frameworks | ✅ signing cert SHA-256 vs `expectedSignature` (w 1.0) · signing-read failure (w 0.5) · Android Studio default debug cert (w 0.4) · installer outside `trustedInstallers` (w 0.3). Hook: Xposed/LSPosed/VirtualXposed/Magisk visible via one `getInstalledPackages()` + `<queries>` manifest | ⚠️ Frida artefacts (FridaGadget framework, `frida-agent` / `frida-gadget` under `/usr/lib/frida/` + rootless `/var/jb/usr/lib/frida/`, `frida-server`, Cycript — w 1.0 each) + `NSBundle.bundleIdentifier == nil` (w 0.6). Full `SecStaticCodeCheckValidity` + dyld scanning deferred | — (JAR verification different threat model) | — (browser SRI different threat model) |
+| **NetworkCheck** (`enableNetworkCheck`) — VPN + proxy (2 independent threats, low default weights) | ✅ VPN: `ConnectivityManager` + `TRANSPORT_VPN` / missing `NET_CAPABILITY_NOT_VPN` (API 23+, w 1.0) · `NetworkInterface` `tun*/utun*/ipsec*/ppp*/wg*/tap*` up (w 0.8). Proxy: `http(s).proxyHost` (w 1.0) · `socksProxyHost` (w 0.9) | — (cinterop for `getifaddrs()` / `NEVPNManager` deferred) | ✅ VPN: `NetworkInterface` scan for same prefixes (w 1.0). Proxy: `http`/`https`/`socks` system properties (1.0 / 1.0 / 0.9) + `ProxySelector.getDefault().select()` non-DIRECT (w 0.8) | — (needs server-side IP correlation) |
+| **RemoteCheck** (`enableRemoteCheck`) — remote-control apps + live screen capture | ✅ PackageManager scan against 16 known remote-control pkgs (AnyDesk, TeamViewer, RustDesk, Chrome Remote Desktop…) with `<queries>` manifest · AccessibilityManager running-services scan for known remote services. Fires `RemoteControlInstalled` | ⚠️ `UIScreen.mainScreen.captured` for live screen mirror/record only (fires `ScreenBeingCaptured`). Sandbox blocks app enumeration | ✅ `ProcessHandle.allProcesses()` basename scan for known remote binaries (vncserver, x11vnc, teamviewerd, rustdesk, anydesk, screensharingd on macOS). Fires `RemoteControlInstalled` | — (sandbox) |
+| **SurveillanceCheck** (`enableSurveillanceCheck`) — apps that can spy on or interfere with other apps | ✅ 4 categories: AccessibilityManager enabled-services (non-system) → `AccessibilityAbuse` · `Settings.Secure.ENABLED_NOTIFICATION_LISTENERS` (non-system) → `NotificationListener` · `DevicePolicyManager.getActiveAdmins()` (non-system) → `DeviceAdminActive` · `Settings.Secure.DEFAULT_INPUT_METHOD` outside allow-list → `SuspiciousIme` | — (sandbox — jailbreak threat already implies elevated surveillance risk) | ⚠️ `ProcessHandle` basename scan against automation tools (pyautogui, appium, selenium, sikuli, autohotkey, keyclick) → `AutomationToolRunning`, and debuggers (gdb, lldb, strace, dtruss, frida-server) → `DebuggerAttachedElsewhere` | — (sandbox) |
+
+Every detector is optional — only enabled modules run. `analyze()` fans them out concurrently via `coroutineScope` + `async` / `awaitAll` on the caller's dispatcher, isolating each with a try/catch; the orchestrator merges confidences into a single `SecurityReport.riskScore` (0–100) and `riskLevel` (SAFE / LOW / MEDIUM / HIGH / CRITICAL).
 
 ## Sample apps
 
@@ -89,6 +98,13 @@ error list, and end-to-end timing.
 | `sample/desktop` | ✅ `jar` | `./gradlew :sample:desktop:run` |
 | `sample/web` | ✅ `jsBrowserProductionWebpack` (artefact uploaded) | `./gradlew :sample:web:jsBrowserDevelopmentRun` → <http://localhost:8080> |
 | `sample/ios` | ✅ `xcodegen` + `xcodebuild` on Simulator | `cd sample/ios && xcodegen && open DeviceGuardSample.xcodeproj`; then Run in Xcode |
+
+> **End-to-end smoke-verified on 2026-04-20** across all 4 samples with the full
+> 7-detector build enabled:
+> Desktop headless `./gradlew :sample:desktop:run` — report produced;
+> Android (Pixel 6 API 34 emulator) — 2 threats, 16 signals, MEDIUM risk, no false positives on the new Remote/Surveillance toggles;
+> iOS (iPhone 16 Simulator, iOS 18) — CRITICAL risk on simulator (expected: `Emulator` always; `ScreenBeingCaptured` only when AirPlay / ReplayKit / Control-Center recording is active);
+> Web (Chromium headless @ `jsBrowserProductionWebpack` output) — LOW risk, 1 threat, 13 signals, 21 ms elapsed.
 
 ### Manual QA matrix
 
@@ -129,16 +145,20 @@ evidence — attach to the release notes PR.
 | `deviceguard-emulator` | ✅ available | Emulator / Debugger detection |
 | `deviceguard-integrity` | ✅ available | App tampering & hook detection |
 | `deviceguard-network` | ✅ available | VPN / Proxy / Tor inspection |
+| `deviceguard-remote` | ✅ available | Remote-control apps & screen-capture detection |
+| `deviceguard-surveillance` | ✅ available | Accessibility / notification-listener / device-admin / IME abuse + automation-tool detection |
 | `deviceguard-bom` | ✅ available | Bill of Materials for version alignment |
 
-## Platforms
+## Supported platforms
 
-| Platform | Core | Fingerprint | Root/Jailbreak | Emulator/Debugger | Integrity | Network |
-|----------|------|-------------|----------------|-------------------|-----------|---------|
-| Android (API 21+) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| iOS (13+) | ✅ | ✅ | ✅ (jailbreak) | ✅ (simulator; debugger TBD) | ✅ (Frida artefacts; re-sign TBD) | — deferred (cinterop) |
-| JVM / Desktop | ✅ | ✅ | — not applicable | ✅ (JDWP) | — deferred | ✅ |
-| JS / Web | ✅ | ✅ (best-effort, browser only) | — not applicable | ✅ (webdriver; best-effort) | — deferred | — deferred |
+| Platform | Minimum | Notes |
+|----------|---------|-------|
+| Android | API 21 (Lollipop) | full detector coverage — see matrix above |
+| iOS | 13.0 | Fingerprint / RootCheck (jailbreak) / EmulatorCheck / IntegrityCheck / RemoteCheck (screen-capture only). Network deferred (cinterop). Surveillance N/A (sandbox) |
+| JVM / Desktop | JDK 17 | Fingerprint / EmulatorCheck (JDWP) / NetworkCheck / RemoteCheck / SurveillanceCheck (best-effort via `ProcessHandle`). Root / Integrity N/A |
+| JS / Web | ES2020 browser | Fingerprint (best-effort) / EmulatorCheck (webdriver). Root / Integrity / Network / Remote / Surveillance all N/A — sandbox |
+
+See the detector × platform matrix above for what each detector does on each OS, including the signal weights and how they're collected.
 
 ## Fingerprinting
 
