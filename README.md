@@ -67,7 +67,7 @@ Minimum period is `500 ms` — leaves headroom above the 200 ms p95 per-analyze 
 
 ### Detector × platform matrix — what it does and how it works
 
-Legend: ✅ full coverage · ⚠️ partial / best-effort · — not applicable on this platform (returns `DetectionResult.NotApplicable`).
+Legend: ✅ full coverage · ⚠️ partial / best-effort · — not applicable on this platform, or deferred pending a follow-up (cell text clarifies which). Both return `DetectionResult.NotApplicable` today.
 
 | Detector | Android | iOS | Desktop JVM | Web (JS) |
 |---|---|---|---|---|
@@ -79,7 +79,7 @@ Legend: ✅ full coverage · ⚠️ partial / best-effort · — not applicable 
 | **RemoteCheck** (`enableRemoteCheck`) — remote-control apps + live screen capture | ✅ PackageManager scan against 16 known remote-control pkgs (AnyDesk, TeamViewer, RustDesk, Chrome Remote Desktop…) with `<queries>` manifest · AccessibilityManager running-services scan for known remote services. Fires `RemoteControlInstalled` | ⚠️ `UIScreen.mainScreen.captured` for live screen mirror/record only (fires `ScreenBeingCaptured`). Sandbox blocks app enumeration | ✅ `ProcessHandle.allProcesses()` basename scan for known remote binaries (vncserver, x11vnc, teamviewerd, rustdesk, anydesk, screensharingd on macOS). Fires `RemoteControlInstalled` | — (sandbox) |
 | **SurveillanceCheck** (`enableSurveillanceCheck`) — apps that can spy on or interfere with other apps | ✅ 4 categories: AccessibilityManager enabled-services (non-system) → `AccessibilityAbuse` · `Settings.Secure.ENABLED_NOTIFICATION_LISTENERS` (non-system) → `NotificationListener` · `DevicePolicyManager.getActiveAdmins()` (non-system) → `DeviceAdminActive` · `Settings.Secure.DEFAULT_INPUT_METHOD` outside allow-list → `SuspiciousIme` | — (sandbox — jailbreak threat already implies elevated surveillance risk) | ⚠️ `ProcessHandle` basename scan against automation tools (pyautogui, appium, selenium, sikuli, autohotkey, keyclick) → `AutomationToolRunning`, and debuggers (gdb, lldb, strace, dtruss, frida-server) → `DebuggerAttachedElsewhere` | — (sandbox) |
 
-Every detector is optional — only enabled modules run. `analyze()` fans them out in parallel on `Dispatchers.Default`; the orchestrator merges confidences into a single `SecurityReport.riskScore` (0–100) and `riskLevel` (SAFE / LOW / MEDIUM / HIGH / CRITICAL).
+Every detector is optional — only enabled modules run. `analyze()` fans them out concurrently via `coroutineScope` + `async` / `awaitAll` on the caller's dispatcher, isolating each with a try/catch; the orchestrator merges confidences into a single `SecurityReport.riskScore` (0–100) and `riskLevel` (SAFE / LOW / MEDIUM / HIGH / CRITICAL).
 
 ## Sample apps
 
@@ -103,7 +103,7 @@ error list, and end-to-end timing.
 > 7-detector build enabled:
 > Desktop headless `./gradlew :sample:desktop:run` — report produced;
 > Android (Pixel 6 API 34 emulator) — 2 threats, 16 signals, MEDIUM risk, no false positives on the new Remote/Surveillance toggles;
-> iOS (iPhone 16 Simulator, iOS 18) — CRITICAL risk on simulator (expected: `Emulator` + `ScreenBeingCaptured` on shared display);
+> iOS (iPhone 16 Simulator, iOS 18) — CRITICAL risk on simulator (expected: `Emulator` always; `ScreenBeingCaptured` only when AirPlay / ReplayKit / Control-Center recording is active);
 > Web (Chromium headless @ `jsBrowserProductionWebpack` output) — LOW risk, 1 threat, 13 signals, 21 ms elapsed.
 
 ### Manual QA matrix

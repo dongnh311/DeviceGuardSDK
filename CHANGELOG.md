@@ -33,6 +33,19 @@ out inline and collapsed into the `0.1.0` entry on release.
 - `deviceguard-network` — VPN interface / transport detection and HTTP / HTTPS / SOCKS
   proxy detection on Android and JVM. iOS + JS mark themselves `NotApplicable` with a
   reason for now.
+- `deviceguard-remote` — remote-control app & live-screen-capture detection. Android
+  scans PackageManager against 16 known remote-control packages (AnyDesk, TeamViewer,
+  RustDesk, Chrome Remote Desktop, …) plus AccessibilityManager running-services; JVM
+  scans `ProcessHandle.allProcesses()` basenames against known remote binaries including
+  `screensharingd` on macOS; iOS uses `UIScreen.mainScreen.captured` for screen-mirror
+  / record detection only; Web is `NotApplicable` (sandbox).
+- `deviceguard-surveillance` — apps that can spy on or interfere with other apps.
+  Android categories: AccessibilityAbuse, NotificationListener, DeviceAdminActive,
+  SuspiciousIme. JVM categories: AutomationToolRunning, DebuggerAttachedElsewhere via
+  process-basename scan. iOS + Web `NotApplicable`.
+- `DeviceGuard.observe(periodMs)` — realtime `Flow<SecurityReport>` that polls at the
+  configured interval and only emits when the threat set or fingerprint changes
+  (`distinctUntilChanged`). Minimum period 500 ms.
 - `deviceguard-bom` — Bill-of-Materials java-platform module for pinning subproject
   versions together.
 - Build + tooling: Gradle version catalog (`libs.versions.toml`), Detekt + ktlint enforced
