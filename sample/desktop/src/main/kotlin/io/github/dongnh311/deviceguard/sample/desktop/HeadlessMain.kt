@@ -15,7 +15,7 @@ fun main() {
         .enableFingerprint()
         .enableRootCheck(strict = false)
         .enableEmulatorCheck()
-        .enableIntegrityCheck(expectedSignature = null, trustedInstallers = emptySet())
+        .enableIntegrityCheck()
         .enableNetworkCheck()
         .build()
 
