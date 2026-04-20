@@ -6,7 +6,9 @@ import io.github.dongnh311.deviceguard.emulator.enableEmulatorCheck
 import io.github.dongnh311.deviceguard.fingerprint.enableFingerprint
 import io.github.dongnh311.deviceguard.integrity.enableIntegrityCheck
 import io.github.dongnh311.deviceguard.network.enableNetworkCheck
+import io.github.dongnh311.deviceguard.remote.enableRemoteCheck
 import io.github.dongnh311.deviceguard.rootcheck.enableRootCheck
+import io.github.dongnh311.deviceguard.surveillance.enableSurveillanceCheck
 import kotlinx.coroutines.runBlocking
 import kotlin.time.TimeSource
 
@@ -19,6 +21,8 @@ fun main() {
             .enableEmulatorCheck()
             .enableIntegrityCheck()
             .enableNetworkCheck()
+            .enableRemoteCheck()
+            .enableSurveillanceCheck()
             .build()
 
     val mark = TimeSource.Monotonic.markNow()

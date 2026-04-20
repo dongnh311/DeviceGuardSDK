@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      Android 11+ (API 30) restricts PackageManager visibility: by default, apps can only
+      see themselves and a narrow allow-list of system packages. We declare the known
+      remote-control packages here so that PackageManager.getPackageInfo() can return them
+      when installed. Consumers inherit this via manifest merge; they do not need to duplicate
+      the list in their own AndroidManifest.xml.
+
+      Source: https://developer.android.com/training/package-visibility/declaring
+    -->
+    <queries>
+        <package android:name="com.teamviewer.teamviewer.market.mobile" />
+        <package android:name="com.teamviewer.quicksupport.market" />
+        <package android:name="com.anydesk.anydeskandroid" />
+        <package android:name="com.sand.airdroid" />
+        <package android:name="com.sand.airmirror" />
+        <package android:name="com.rustdesk.rustdesk" />
+        <package android:name="com.splashtop.remote.pad.v2" />
+        <package android:name="com.splashtop.remote.business" />
+        <package android:name="com.google.chromeremotedesktop" />
+        <package android:name="com.microsoft.rdc.android" />
+        <package android:name="com.microsoft.rdc.androidx" />
+        <package android:name="com.realvnc.viewer.android" />
+        <package android:name="net.christianbeier.droidvnc_ng" />
+        <package android:name="com.islonline.islpronto" />
+        <package android:name="com.mechdome.ispyoo" />
+        <package android:name="com.monect.free" />
+        <package android:name="com.Relmtech.Remote" />
+    </queries>
+</manifest>

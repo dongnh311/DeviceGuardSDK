@@ -53,7 +53,10 @@ jobs:
           path: '**/build/reports/'
 
   build-macos:
-    name: Build (macOS — iOS + full matrix)
+    # Scoped to iOS-only tasks. Linux job already covers JVM/JS/Android; ktlint
+    # and detekt have dedicated jobs. This shaves ~20 min off the macos runner
+    # by skipping duplicate work and the expensive Release framework links.
+    name: Build (macOS — iOS targets)
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -62,8 +65,14 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
-      - name: Full build (all targets including iOS)
-        run: ./gradlew build --no-daemon
+      - name: Compile + test iOS Kotlin/Native targets
+        run: |
+          ./gradlew \
+            iosSimulatorArm64Test \
+            linkDebugFrameworkIosArm64 \
+            linkDebugFrameworkIosX64 \
+            linkDebugFrameworkIosSimulatorArm64 \
+            --no-daemon
       - name: Upload reports
         if: failure()
         uses: actions/upload-artifact@v4
@@ -150,8 +159,6 @@ jobs:
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             build
-      - name: Sanity-check shared framework link for every ios target
-        run: ./gradlew :sample:shared:linkReleaseFrameworkIosSimulatorArm64 --no-daemon
 
   docs:
     name: Dokka API docs
