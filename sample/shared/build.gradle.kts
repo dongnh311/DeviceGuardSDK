@@ -48,6 +48,8 @@ kotlin {
                 implementation(project(":deviceguard-emulator"))
                 implementation(project(":deviceguard-integrity"))
                 implementation(project(":deviceguard-network"))
+                implementation(project(":deviceguard-remote"))
+                implementation(project(":deviceguard-surveillance"))
 
                 implementation(compose.runtime)
                 implementation(compose.foundation)

@@ -19,4 +19,6 @@ internal enum class DetectorToggle(
     EmulatorCheck("Emulator / Debugger"),
     IntegrityCheck("Integrity"),
     NetworkCheck("Network / VPN / Proxy"),
+    RemoteCheck("Remote control / Screen capture"),
+    SurveillanceCheck("Surveillance / Tampering"),
 }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      The surveillance detector reads cross-app state (enabled accessibility services,
+      default IME, notification listeners, active device admins). These APIs are Settings-
+      scoped and do not need additional permissions beyond what consumers already hold.
+      No <queries> block needed because surveillance signals come from system services,
+      not from specific package introspection.
+    -->
+</manifest>

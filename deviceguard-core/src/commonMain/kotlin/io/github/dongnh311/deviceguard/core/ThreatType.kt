@@ -39,6 +39,36 @@ public sealed class ThreatType(
     /** Device traffic is routed through a known Tor exit. */
     public data object TorExit : ThreatType(id = "tor_exit", defaultWeight = 35)
 
+    /** A known remote-control / screen-sharing app is installed (TeamViewer, AnyDesk, etc.). */
+    public data object RemoteControlInstalled : ThreatType(id = "remote_control_installed", defaultWeight = 40)
+
+    /** The device screen is currently being mirrored, captured, or recorded. */
+    public data object ScreenBeingCaptured : ThreatType(id = "screen_being_captured", defaultWeight = 45)
+
+    /** A third-party app holds the AccessibilityService permission (common banking-trojan vector). */
+    public data object AccessibilityAbuse : ThreatType(id = "accessibility_abuse", defaultWeight = 55)
+
+    /** A third-party app can draw on top of other apps (SYSTEM_ALERT_WINDOW). */
+    public data object OverlayPermission : ThreatType(id = "overlay_permission", defaultWeight = 40)
+
+    /** A third-party app is listening to all notifications (OTP theft vector). */
+    public data object NotificationListener : ThreatType(id = "notification_listener", defaultWeight = 45)
+
+    /** A third-party app holds device-admin rights (can lock, wipe, or disable camera). */
+    public data object DeviceAdminActive : ThreatType(id = "device_admin_active", defaultWeight = 50)
+
+    /** The active input method is a non-system keyboard (potential keylogger). */
+    public data object SuspiciousIme : ThreatType(id = "suspicious_ime", defaultWeight = 35)
+
+    /** A third-party app holds the usage-stats permission (foreground-app tracking). */
+    public data object UsageStatsGranted : ThreatType(id = "usage_stats_granted", defaultWeight = 25)
+
+    /** An automation / macro tool that can synthesize input is running (AutoHotkey, Hammerspoon, etc.). */
+    public data object AutomationToolRunning : ThreatType(id = "automation_tool_running", defaultWeight = 30)
+
+    /** A debugger is attached to another process on the machine (local tampering vector). */
+    public data object DebuggerAttachedElsewhere : ThreatType(id = "debugger_attached_elsewhere", defaultWeight = 40)
+
     /** Extension point for application-specific threats not covered by the built-ins. */
     public data class Custom(
         override val id: String,

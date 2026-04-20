@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0%2B-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 
-> Kotlin Multiplatform SDK for comprehensive device security: fingerprinting, root/jailbreak detection, emulator detection, app integrity, and network inspection — on Android, iOS, JVM/Desktop, and Web.
+> Kotlin Multiplatform SDK for comprehensive device security: fingerprinting, root/jailbreak detection, emulator detection, app integrity, network inspection, remote-control app detection, and surveillance / tampering detection — on Android, iOS, JVM/Desktop, and Web.
 
 **📘 Full documentation:** <https://dongnh311.github.io/DeviceGuardSDK/>
 
@@ -27,6 +27,8 @@ dependencies {
     implementation("io.github.dongnh311:deviceguard-emulator:0.1.0")
     implementation("io.github.dongnh311:deviceguard-integrity:0.1.0")
     implementation("io.github.dongnh311:deviceguard-network:0.1.0")
+    implementation("io.github.dongnh311:deviceguard-remote:0.1.0")
+    implementation("io.github.dongnh311:deviceguard-surveillance:0.1.0")
 }
 ```
 
@@ -39,6 +41,8 @@ val guard = DeviceGuard.Builder(context)
     .enableEmulatorCheck()
     .enableIntegrityCheck(expectedSignature = "…")
     .enableNetworkCheck()
+    .enableRemoteCheck()
+    .enableSurveillanceCheck()
     .build()
 
 val report = guard.analyze()
@@ -46,6 +50,27 @@ println("Risk: ${report.riskScore}/100")
 println("Threats: ${report.threats}")
 println("Device ID: ${report.fingerprint.id}")
 ```
+
+### Realtime observe() — emit on state change
+
+`analyze()` gives a one-shot snapshot. For continuously monitoring the device, collect
+`DeviceGuard.observe(periodMs)`: it polls at the configured interval and only emits when
+the threat set or fingerprint actually changes (same threats, same report → no emission).
+
+```kotlin
+guard.observe(periodMs = 5_000L).collect { report ->
+    updateUi(report)
+}
+```
+
+Minimum period is `500 ms` — leaves headroom above the 200 ms p95 per-analyze budget.
+
+### Platform coverage of the new detectors
+
+| Detector | Android | iOS | Desktop JVM | Web |
+|---|---|---|---|---|
+| `enableRemoteCheck()` | ✅ PackageManager + AccessibilityService scan for known remote-control apps | ⚠️ `UIScreen.isCaptured` only (screen mirror/record) — sandbox blocks app enumeration | ✅ `ProcessHandle` scan for known remote binaries | ❌ NotApplicable (sandbox) |
+| `enableSurveillanceCheck()` | ✅ 4 categories: accessibility abuse, notification listener, device admin, suspicious IME | ❌ NotApplicable (sandbox) — jailbreak threat implies elevated surveillance risk | ⚠️ Process-scan best-effort: automation tools + debuggers | ❌ NotApplicable (sandbox) |
 
 ## Sample apps
 

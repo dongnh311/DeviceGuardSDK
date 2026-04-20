@@ -28,6 +28,8 @@ dependencies {
     implementation(project(":deviceguard-emulator"))
     implementation(project(":deviceguard-integrity"))
     implementation(project(":deviceguard-network"))
+    implementation(project(":deviceguard-remote"))
+    implementation(project(":deviceguard-surveillance"))
     implementation(libs.kotlinx.coroutines.core)
     implementation(compose.desktop.currentOs)
 }

@@ -45,6 +45,8 @@ include(
     ":deviceguard-emulator",
     ":deviceguard-integrity",
     ":deviceguard-network",
+    ":deviceguard-remote",
+    ":deviceguard-surveillance",
     ":deviceguard-bom",
     ":sample:shared",
     ":sample:android",

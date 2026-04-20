@@ -6,7 +6,9 @@ import io.github.dongnh311.deviceguard.emulator.enableEmulatorCheck
 import io.github.dongnh311.deviceguard.fingerprint.enableFingerprint
 import io.github.dongnh311.deviceguard.integrity.enableIntegrityCheck
 import io.github.dongnh311.deviceguard.network.enableNetworkCheck
+import io.github.dongnh311.deviceguard.remote.enableRemoteCheck
 import io.github.dongnh311.deviceguard.rootcheck.enableRootCheck
+import io.github.dongnh311.deviceguard.surveillance.enableSurveillanceCheck
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -78,12 +80,10 @@ internal class SampleStateHolder(
                 DetectorToggle.Fingerprint -> builder.enableFingerprint()
                 DetectorToggle.RootCheck -> builder.enableRootCheck(strict = state.strictRoot)
                 DetectorToggle.EmulatorCheck -> builder.enableEmulatorCheck()
-                DetectorToggle.IntegrityCheck ->
-                    builder.enableIntegrityCheck(
-                        expectedSignature = null,
-                        trustedInstallers = emptySet(),
-                    )
+                DetectorToggle.IntegrityCheck -> builder.enableIntegrityCheck()
                 DetectorToggle.NetworkCheck -> builder.enableNetworkCheck()
+                DetectorToggle.RemoteCheck -> builder.enableRemoteCheck()
+                DetectorToggle.SurveillanceCheck -> builder.enableSurveillanceCheck()
             }
         }
         return builder.build()
