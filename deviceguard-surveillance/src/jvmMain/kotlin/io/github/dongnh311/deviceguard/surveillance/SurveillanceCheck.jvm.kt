@@ -1,55 +1,38 @@
 package io.github.dongnh311.deviceguard.surveillance
 
 import io.github.dongnh311.deviceguard.core.DeviceGuardContext
-import java.util.Locale
+import io.github.dongnh311.deviceguard.core.InternalDeviceGuardApi
+import io.github.dongnh311.deviceguard.core.scanJvmProcessBasenames
 
 private const val WEIGHT_AUTOMATION_TOOL = 1.0f
 private const val WEIGHT_DEBUGGER_PROCESS = 1.0f
 
 /**
- * Desktop JVM surveillance detection. Limited to process-name scanning because the
- * desktop JVM has no unified permission model equivalent to Android.
+ * Desktop JVM surveillance detection. Limited to process-name scanning — the desktop JVM
+ * has no unified permission model equivalent to Android's `AccessibilityManager` /
+ * `DevicePolicyManager`.
  *
- * Signals:
- * - A known automation / macro process is running (AutoHotkey, Hammerspoon, Keyboard
- *   Maestro, BetterTouchTool, Karabiner, xdotool). Weight 1.0 per match.
- * - A known debugger / instrumentation process is running (gdb, lldb, x64dbg, Frida,
- *   Cheat Engine, IDA). Weight 1.0 per match. Cannot tell which process is being
- *   debugged from a sandboxed JVM — the presence of the tool is the signal.
+ * Delegates to [scanJvmProcessBasenames] for process enumeration. Automation tools and
+ * debuggers share one scan by passing a union of their needle sets, then partitioning
+ * the hits by category afterwards.
  */
+@OptIn(InternalDeviceGuardApi::class)
 internal actual suspend fun runSurveillanceCheck(context: DeviceGuardContext): SurveillanceOutcome {
-    val hits = runCatching { scanProcesses() }.getOrDefault(emptyList())
-    return SurveillanceOutcome(applicable = true, indicators = hits)
-}
+    val needles = KNOWN_AUTOMATION_PROCESSES.toSet() + KNOWN_DEBUGGERS.toSet()
+    val hits = runCatching { scanJvmProcessBasenames(needles) }.getOrDefault(emptySet())
 
-private fun scanProcesses(): List<SurveillanceIndicator> {
-    val hits = mutableListOf<SurveillanceIndicator>()
-    ProcessHandle.allProcesses().use { stream ->
-        stream.forEach { handle ->
-            val command = handle.info().command().orElse(null) ?: return@forEach
-            val basename =
-                command
-                    .substringAfterLast('/')
-                    .substringAfterLast('\\')
-                    .removeSuffix(".exe")
-                    .lowercase(Locale.US)
-            when {
-                basename in KNOWN_AUTOMATION_PROCESSES ->
-                    hits +=
-                        SurveillanceIndicator(
-                            SurveillanceCategory.AutomationToolRunning,
-                            "automation_process:$basename",
-                            WEIGHT_AUTOMATION_TOOL,
-                        )
-                basename in KNOWN_DEBUGGERS ->
-                    hits +=
-                        SurveillanceIndicator(
-                            SurveillanceCategory.DebuggerAttachedElsewhere,
-                            "debugger_process:$basename",
-                            WEIGHT_DEBUGGER_PROCESS,
-                        )
-            }
+    val indicators =
+        hits.map { basename ->
+            val category =
+                if (basename in KNOWN_AUTOMATION_PROCESSES) {
+                    SurveillanceCategory.AutomationToolRunning
+                } else {
+                    SurveillanceCategory.DebuggerAttachedElsewhere
+                }
+            val prefix = if (category == SurveillanceCategory.AutomationToolRunning) "automation_process" else "debugger_process"
+            val weight = if (category == SurveillanceCategory.AutomationToolRunning) WEIGHT_AUTOMATION_TOOL else WEIGHT_DEBUGGER_PROCESS
+            SurveillanceIndicator(category, "$prefix:$basename", weight)
         }
-    }
-    return hits
+
+    return SurveillanceOutcome(applicable = true, indicators = indicators)
 }

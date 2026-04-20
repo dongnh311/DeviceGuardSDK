@@ -1,6 +1,7 @@
 package io.github.dongnh311.deviceguard.surveillance
 
 import io.github.dongnh311.deviceguard.core.DeviceGuardContext
+import io.github.dongnh311.deviceguard.core.ThreatType
 
 /** A single surveillance / tampering signal fired on the host platform. */
 internal data class SurveillanceIndicator(
@@ -9,16 +10,18 @@ internal data class SurveillanceIndicator(
     val weight: Float,
 )
 
-/** Category buckets — one-to-one with the threat types the detector emits. */
-internal enum class SurveillanceCategory {
-    AccessibilityAbuse,
-    OverlayPermission,
-    NotificationListener,
-    DeviceAdminActive,
-    SuspiciousIme,
-    UsageStatsGranted,
-    AutomationToolRunning,
-    DebuggerAttachedElsewhere,
+/** Category buckets — each maps to exactly one [ThreatType] the detector emits. */
+internal enum class SurveillanceCategory(
+    val threatType: ThreatType,
+) {
+    AccessibilityAbuse(ThreatType.AccessibilityAbuse),
+    OverlayPermission(ThreatType.OverlayPermission),
+    NotificationListener(ThreatType.NotificationListener),
+    DeviceAdminActive(ThreatType.DeviceAdminActive),
+    SuspiciousIme(ThreatType.SuspiciousIme),
+    UsageStatsGranted(ThreatType.UsageStatsGranted),
+    AutomationToolRunning(ThreatType.AutomationToolRunning),
+    DebuggerAttachedElsewhere(ThreatType.DebuggerAttachedElsewhere),
 }
 
 /**

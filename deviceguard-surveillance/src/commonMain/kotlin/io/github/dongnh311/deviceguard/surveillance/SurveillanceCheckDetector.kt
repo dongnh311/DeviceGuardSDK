@@ -58,9 +58,8 @@ public class SurveillanceCheckDetector internal constructor(
             buildList {
                 for ((category, confidence) in confidences) {
                     if (confidence < THRESHOLD) continue
-                    val type = category.threatType()
                     val indicators = (grouped[category].orEmpty()).map { it.name }
-                    add(DetectedThreat.of(threat = type, confidence = confidence, indicators = indicators))
+                    add(DetectedThreat.of(threat = category.threatType, confidence = confidence, indicators = indicators))
                 }
             }
 
@@ -88,18 +87,6 @@ public class SurveillanceCheckDetector internal constructor(
     }
 
     private fun Map<SurveillanceCategory, Float>.isTripped(category: SurveillanceCategory): Boolean = (this[category] ?: 0f) >= THRESHOLD
-
-    private fun SurveillanceCategory.threatType(): ThreatType =
-        when (this) {
-            SurveillanceCategory.AccessibilityAbuse -> ThreatType.AccessibilityAbuse
-            SurveillanceCategory.OverlayPermission -> ThreatType.OverlayPermission
-            SurveillanceCategory.NotificationListener -> ThreatType.NotificationListener
-            SurveillanceCategory.DeviceAdminActive -> ThreatType.DeviceAdminActive
-            SurveillanceCategory.SuspiciousIme -> ThreatType.SuspiciousIme
-            SurveillanceCategory.UsageStatsGranted -> ThreatType.UsageStatsGranted
-            SurveillanceCategory.AutomationToolRunning -> ThreatType.AutomationToolRunning
-            SurveillanceCategory.DebuggerAttachedElsewhere -> ThreatType.DebuggerAttachedElsewhere
-        }
 }
 
 /** Attach a [SurveillanceCheckDetector] to the builder. */
