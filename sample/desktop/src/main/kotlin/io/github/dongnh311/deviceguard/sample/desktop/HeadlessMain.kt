@@ -11,13 +11,15 @@ import kotlinx.coroutines.runBlocking
 import kotlin.time.TimeSource
 
 fun main() {
-    val guard = DeviceGuard.Builder(DeviceGuardContext())
-        .enableFingerprint()
-        .enableRootCheck(strict = false)
-        .enableEmulatorCheck()
-        .enableIntegrityCheck()
-        .enableNetworkCheck()
-        .build()
+    val guard =
+        DeviceGuard
+            .Builder(DeviceGuardContext())
+            .enableFingerprint()
+            .enableRootCheck(strict = false)
+            .enableEmulatorCheck()
+            .enableIntegrityCheck()
+            .enableNetworkCheck()
+            .build()
 
     val mark = TimeSource.Monotonic.markNow()
     val report = runBlocking { guard.analyze() }
