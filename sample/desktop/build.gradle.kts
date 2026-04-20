@@ -15,9 +15,28 @@ kotlin {
     }
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
 dependencies {
     implementation(project(":sample:shared"))
+    implementation(project(":deviceguard-core"))
+    implementation(project(":deviceguard-fingerprint"))
+    implementation(project(":deviceguard-rootcheck"))
+    implementation(project(":deviceguard-emulator"))
+    implementation(project(":deviceguard-integrity"))
+    implementation(project(":deviceguard-network"))
+    implementation(libs.kotlinx.coroutines.core)
     implementation(compose.desktop.currentOs)
+}
+
+tasks.register<JavaExec>("runHeadless") {
+    group = "application"
+    description = "Run DeviceGuard headless report on JVM"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("io.github.dongnh311.deviceguard.sample.desktop.HeadlessMainKt")
 }
 
 compose.desktop {
