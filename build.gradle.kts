@@ -65,6 +65,53 @@ subprojects {
         }
         apply(plugin = rootProject.libs.plugins.kover.get().pluginId)
     }
+
+    if (name.startsWith("deviceguard-")) {
+        apply(plugin = rootProject.libs.plugins.vanniktech.maven.publish.get().pluginId)
+
+        configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
+            publishToMavenCentral(
+                com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL,
+                automaticRelease = true,
+            )
+            signAllPublications()
+
+            coordinates(
+                groupId = project.group.toString(),
+                artifactId = project.name,
+                version = project.version.toString(),
+            )
+
+            pom {
+                name.set(project.name)
+                description.set(
+                    project.description ?: "DeviceGuard SDK module: ${project.name}",
+                )
+                inceptionYear.set("2026")
+                url.set("https://github.com/dongnh311/DeviceGuardSDK")
+                licenses {
+                    license {
+                        name.set("Apache-2.0")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                        distribution.set("repo")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("dongnh311")
+                        name.set("DongNH")
+                        email.set("hoaidongit5@gmail.com")
+                        url.set("https://github.com/dongnh311")
+                    }
+                }
+                scm {
+                    url.set("https://github.com/dongnh311/DeviceGuardSDK")
+                    connection.set("scm:git:git://github.com/dongnh311/DeviceGuardSDK.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/dongnh311/DeviceGuardSDK.git")
+                }
+            }
+        }
+    }
 }
 
 dependencies {

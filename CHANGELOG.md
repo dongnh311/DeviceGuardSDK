@@ -7,6 +7,13 @@ aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) from t
 tagged release (`v0.1.0`). Until then, the API is unstable — breaking changes are called
 out inline and collapsed into the `0.1.0` entry on release.
 
+## [0.1.0] — 2026-04-22
+
+First Maven Central release. All modules published under group
+`io.github.dongnh311` with artifact IDs matching the module names
+(`deviceguard-core`, `deviceguard-fingerprint`, ...) and a
+`deviceguard-bom` for coordinated versioning.
+
 ## [Unreleased]
 
 ### Added
